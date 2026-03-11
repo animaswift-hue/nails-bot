@@ -9,33 +9,35 @@ TOKEN = "8718735616:AAEv60UWCdxTb92u_ZUHZarnUToqXVpbXmY"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Кнопки Inline (они нажимаются)
+# --- КНОПКИ ---
 def get_main_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Онлайн запись 📆", callback_data="book")],
         [InlineKeyboardButton(text="Прайс-лист 💵", callback_data="price")],
-        [InlineKeyboardButton(text="Фото работ 📸", callback_data="gallery")],
+        [InlineKeyboardButton(text="Наши работы 📸", callback_data="gallery")],
         [InlineKeyboardButton(text="Правила 📋", callback_data="rules")],
         [InlineKeyboardButton(text="По вопросам 💬", callback_data="contact")]
     ])
 
+# --- ЛОГИКА ---
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("Добро пожаловать! Выберите раздел:", reply_markup=get_main_menu())
+    await message.answer("Добро пожаловать в Nails Bot! ✨", reply_markup=get_main_menu())
 
-# Логика нажатий
 @dp.callback_query(F.data == "book")
 async def book(call: types.CallbackQuery):
-    await call.message.answer("Ссылка на онлайн запись: [ССЫЛКА]")
+    await call.message.edit_text("Для записи напишите: @тег_девушки", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="« Назад", callback_data="menu")]]))
 
 @dp.callback_query(F.data == "price")
 async def price(call: types.CallbackQuery):
-    await call.message.answer("Наш прайс-лист: [ТЕКСТ ИЛИ ФОТО]")
+    await call.message.edit_text("Наш прайс-лист: ...", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="« Назад", callback_data="menu")]]))
 
-# ... и так далее для каждого callback_data ...
+@dp.callback_query(F.data == "menu")
+async def back_to_menu(call: types.CallbackQuery):
+    await call.message.edit_text("Выберите раздел:", reply_markup=get_main_menu())
 
-# --- Заглушка для Render ---
-async def handle(request): return web.Response(text="OK")
+# --- ВЕБ-СЕРВЕР (чтобы Render не выключал бота) ---
+async def handle(request): return web.Response(text="Бот в сети!")
 async def main():
     app = web.Application()
     app.router.add_get("/", handle)
