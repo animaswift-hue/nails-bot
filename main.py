@@ -1,58 +1,43 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types, F
+import os
+from aiohttp import web
+from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 
-# Твой токен (я вижу, ты его уже вставил, это отлично!)
-TOKEN = "8718735616:AAEv60UWCdxTb92u..." 
-
+TOKEN = "ТВОЙ_ТОКЕН_ТУТ"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Функция главного меню
+# --- МЕНЮ ---
 def get_main_menu():
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Онлайн запись 📆", callback_data="online_book")],
         [InlineKeyboardButton(text="Прайс-лист 💵", callback_data="price")],
         [InlineKeyboardButton(text="Наши работы 📸", callback_data="gallery")],
         [InlineKeyboardButton(text="Правила 📋", callback_data="rules")],
         [InlineKeyboardButton(text="По вопросам 💬", callback_data="contact")]
     ])
-    return keyboard
-
-# Кнопка возврата
-def get_back_button():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="« Вернуться", callback_data="main_menu")]
-    ])
 
 @dp.message(Command("start"))
-async def start_handler(message: types.Message):
-    await message.answer("Добро пожаловать в студию! ✨\nВыберите нужный раздел:", reply_markup=get_main_menu())
+async def start(message: Message):
+    await message.answer("Добро пожаловать в Nails Bot! ✨", reply_markup=get_main_menu())
 
-@dp.callback_query(F.data == "main_menu")
-async def back_to_menu(callback: types.CallbackQuery):
-    await callback.message.edit_text("Главное меню:", reply_markup=get_main_menu())
+# --- ВЕБ-ЗАГЛУШКА ДЛЯ RENDER ---
+async def handle(request):
+    return web.Response(text="Бот в сети!")
 
-# --- Обработка кнопок ---
-
-@dp.callback_query(F.data == "price")
-async def show_price(callback: types.CallbackQuery):
-    await callback.message.edit_text("Вот наш прайс-лист (здесь будет фото):", reply_markup=get_back_button())
-
-@dp.callback_query(F.data == "rules")
-async def show_rules(callback: types.CallbackQuery):
-    await callback.message.edit_text("📋 Наши правила:\n1. Запись по предоплате.\n2. Отмена за 24 часа.", reply_markup=get_back_button())
-
-@dp.callback_query(F.data == "contact")
-async def show_contact(callback: types.CallbackQuery):
-    await callback.message.edit_text("По всем вопросам пишите: @тег_девушки", reply_markup=get_back_button())
-
-@dp.callback_query(F.data == "online_book")
-async def online_book(callback: types.CallbackQuery):
-    await callback.message.edit_text("Для записи напишите нам в ЛС или перейдите по ссылке:", reply_markup=get_back_button())
+async def web_server():
+    app = web.Application()
+    app.router.add_get("/", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
 
 async def main():
+    await web_server()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
